@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Mission Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+            color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+            background: url('https://www.solarsystemscope.com/textures/download/8k_stars_milky_way.jpg') no-repeat center center/cover;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>Space Mission Simulator 🚀</h1>
+        <p>Use Arrow Keys to Move | Avoid Asteroids | Land Safely</p>
+        <p>Fuel: <span id="fuel">100</span>% | Speed: <span id="speed">0</span> m/s</p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let fuel = 100;
+        let speed = 0;
+        let gravity = 0.1;
+        let thrust = 0;
+        let spaceship = { x: canvas.width / 2, y: 50, width: 40, height: 40, vx: 0, vy: 0 };
+        let asteroids = [];
+        let landed = false;
+
+        function createAsteroids() {
+            for (let i = 0; i < 5; i++) {
+                asteroids.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (canvas.height - 300) + 100,
+                    size: Math.random() * 40 + 20,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2
+                });
+            }
+        }
+        createAsteroids();
+
+        function drawSpaceship() {
+            ctx.fillStyle = "white";
+            ctx.fillRect(spaceship.x, spaceship.y, spaceship.width, spaceship.height);
+        }
+        
+        function drawAsteroids() {
+            ctx.fillStyle = "gray";
+            asteroids.forEach(ast => {
+                ctx.beginPath();
+                ctx.arc(ast.x, ast.y, ast.size, 0, Math.PI * 2);
+                ctx.fill();
+                ast.x += ast.vx;
+                ast.y += ast.vy;
+                if (ast.x < 0 || ast.x > canvas.width) ast.vx *= -1;
+                if (ast.y < 0 || ast.y > canvas.height) ast.vy *= -1;
+            });
+        }
+
+        function update() {
+            if (landed) return;
+            
+            spaceship.vy += gravity - thrust;
+            spaceship.y += spaceship.vy;
+            spaceship.x += spaceship.vx;
+            speed = Math.abs(spaceship.vy * 10).toFixed(2);
+            document.getElementById("speed").innerText = speed;
+            document.getElementById("fuel").innerText = fuel.toFixed(0);
+
+            if (spaceship.y + spaceship.height >= canvas.height - 10) {
+                if (speed > 5) {
+                    alert("Crashed! Try Again.");
+                    location.reload();
+                } else {
+                    alert("Safe Landing! Mission Success.");
+                    landed = true;
+                }
+            }
+
+            asteroids.forEach(ast => {
+                if (
+                    spaceship.x < ast.x + ast.size &&
+                    spaceship.x + spaceship.width > ast.x - ast.size &&
+                    spaceship.y < ast.y + ast.size &&
+                    spaceship.y + spaceship.height > ast.y - ast.size
+                ) {
+                    alert("Crashed into an asteroid! Game Over.");
+                    location.reload();
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSpaceship();
+            drawAsteroids();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+
+        window.addEventListener("keydown", (e) => {
+            if (fuel > 0) {
+                if (e.key === "ArrowUp") {
+                    thrust = 0.2;
+                    fuel -= 0.5;
+                }
+                if (e.key === "ArrowLeft") spaceship.vx = -2;
+                if (e.key === "ArrowRight") spaceship.vx = 2;
+            }
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowUp") thrust = 0;
+            if (e.key === "ArrowLeft" || e.key === "ArrowRight") spaceship.vx = 0;
+        });
+    </script>
+</body>
+</html>
